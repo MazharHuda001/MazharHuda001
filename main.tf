@@ -1,53 +1,27 @@
-# Terraform Settings Block
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.67.0" # Updated to the latest version
-    }
-  }
+# Declare AMI ID as a variable
+variable "ami_id" {
+  description = "AMI ID to provision the EC2 instance"
+  type        = string
 }
 
-# Provider Block
-provider "aws" {
-  profile = "default" # AWS Credentials Profile configured on your local desktop terminal $HOME/.aws/credentials
-  region  = "us-east-1"
+# Declare SSH key name as a variable
+variable "ssh_key_name" {
+  description = "SSH key name for accessing the EC2 instance"
+  type        = string
 }
 
-# Resource Block for EC2 instance with SSH key access
+# Resource Block
 resource "aws_instance" "ec2demo" {
-  ami           = "ami-0182f373e66f89c85" # Amazon Linux in us-east-1, update as per your region
+  ami           = var.ami_id # Use the AMI ID from variable
   instance_type = "t2.micro"
+  key_name      = var.ssh_key_name # Use the SSH key name from variable
 
-  # Add the key_name to access the instance using the demo.pem key
-  key_name = "demo" # Replace with the actual key name uploaded in AWS
-
-  # Optionally, add a tag for easier identification
-  tags = {
-    Name = "EC2DemoInstance"
-  }
-
-  # Allow incoming SSH traffic (Port 22)
-  vpc_security_group_ids = [aws_security_group.demo_sg.id]
-
+  # Display the public IP as output
+  associate_public_ip_address = true
 }
 
-# Create a security group that allows SSH traffic
-resource "aws_security_group" "demo_sg" {
-  name        = "demo_sg"
-  description = "Allow SSH inbound traffic"
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Allow from any IP address, restrict as needed
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1" # Allow all outbound traffic
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+# Output Block to display Public IP
+output "ec2_public_ip" {
+  value       = aws_instance.ec2demo.public_ip
+  description = "The public IP of the EC2 instance"
 }
